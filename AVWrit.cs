@@ -13,7 +13,7 @@ namespace AVSDK
         public UInt16 word;
         public byte   punc;
         public byte   trans;
-        public UInt16 pnwx;
+        public UInt16 pnwc;
         public UInt32 pos;
         public UInt16 lemma;
     }
@@ -21,13 +21,6 @@ namespace AVSDK
     {
         public UInt64 strongs;
         public UInt16 verseIdx;
-        public UInt16 word;
-        public byte   punc;
-        public byte   trans;
-        public UInt16 pnwc;
-    }
-    public struct WritDefunct
-    {
         public UInt16 word;
         public byte   punc;
         public byte   trans;

@@ -2,37 +2,20 @@
 
 namespace AVSDK
 {
-#if NEVER
-    public interface IAVMemMap
-    {
-        string GetWord();
-        string GetWordWithPunctuation();
-        string GetWordWithCapitolization();
-        string GetWordWithCapitolizationAndPunctuation();
-    }
-#endif
     public class AVMemMap // : IAVMemMap
     {
         protected System.IO.MemoryMappedFiles.MemoryMappedFile map;
         protected System.IO.MemoryMappedFiles.MemoryMappedViewAccessor view;
-#if AV_WRITABLE
-        //  #ifdef'ed away because the mem-map never updated the underlying file
-        //  left in for now in case it can be fixed
-        //
-        protected const bool WRITABLE = true;
-        public bool dirty       { get; protected set; }
-        public bool writeError  { get; protected set; }
-        public bool overflow    { get; protected set; }
-#endif
+
         public byte size        { get; protected set; }
         public UInt32 cnt       { get; protected set; }
         public UInt32 cursor    { get; protected set; }
-        public bool underflow   { get; protected set; }
         public string name      { get; protected set; }
+
         private UInt32 length;
         private UInt32 data;
 
-        protected AVMemMap(string path, byte size)
+        protected AVMemMap(string path, byte size) // size will be 176/DX11/22-bytes, 128//DX8/16-bytes, 32/DX2/4-bytes
         {
             this.name = null;
             this.size = size;
@@ -44,12 +27,7 @@ namespace AVSDK
 
             cnt = length / (UInt32) size;
             this.view = map.CreateViewAccessor(0, this.length); 
-#if AV_WRITABLE
-            this.writeError = false;
-            this.overflow = false;
-            this.dirty = false;
-#endif
-            this.underflow = false;
+
             this.SetCursor(0);
             this.data = 0;
         }
@@ -66,13 +44,7 @@ namespace AVSDK
                 this.cursor = 0;
             }
             data = (this.cursor * size);
-#if AV_WRITABLE
-            if (AVMemMap.WRITABLE && dirty)
-            {
-                this.view.Flush();
-                this.dirty = false;
-            }
-#endif
+
             return result;
         }
         public bool Next()
@@ -80,42 +52,39 @@ namespace AVSDK
             bool result = (++this.cursor < this.cnt);
             data = (this.cursor * size);
 
-#if AV_WRITABLE
-            if (AVMemMap.WRITABLE && this.dirty)
-            {
-                this.view.Flush();
-                this.dirty = false;
-            }
-#endif
             return result;
         }
 
         public const UInt32 FIRST = 0x00000000;
         public const UInt32 NEXT  = 0xFFFFFFFF;
-        
-        public bool GetRecord(UInt32 director, ref Writ128 result)
+
+        public bool GetRecord(UInt32 director, ref Writ176 result)
         {
             bool ok = (director == NEXT) ? ((++this.cursor) < this.cnt) : this.SetCursor(director);
 
             if (ok)
             {
                 data = (this.cursor * size);
-                if (this.size == 16)
+                if (this.size == 22)
                 {
-                    result.strongs = this.Strongs;
-                    result.verseIdx = this.Index;
-                    result.pnwc = this.POS;
-                }
-                else if (this.size >= 6)
-                {
-                    result.strongs = UInt64.MaxValue;
-                    result.verseIdx = UInt16.MaxValue;
-                    result.pnwc = this.POS;
+                    result.pos = this.POS;
+                    result.lemma = this.Lemma;
                 }
                 else
                 {
-                    result.strongs = UInt64.MaxValue;
-                    result.verseIdx = UInt16.MaxValue;
+                    result.pos = 0;
+                    result.lemma = 0;
+                }
+                if (this.size >= 16)
+                {
+                    result.strongs = this.Strongs;
+                    result.verseIdx = this.Index;
+                    result.pnwc = this.WClass;
+                }
+                else
+                {
+                    result.strongs = 0;
+                    result.verseIdx = 0;
                     result.pnwc = 0;
                 }
                 result.word = this.WordKey;
@@ -124,18 +93,23 @@ namespace AVSDK
             }
             return ok;
         }
-        public bool GetRecord(UInt32 director, ref WritDefunct result)
+        public bool GetRecord(UInt32 director, ref Writ128 result)
         {
             bool ok = (director == NEXT) ? ((++this.cursor) < this.cnt) : this.SetCursor(director);
 
             if (ok)
             {
-                if (this.size >= 6)
+                data = (this.cursor * size);
+                if (this.size >= 16)
                 {
-                    result.pnwc = this.POS;
+                    result.strongs = this.Strongs;
+                    result.verseIdx = this.Index;
+                    result.pnwc = this.WClass;
                 }
                 else
                 {
+                    result.strongs = 0;
+                    result.verseIdx = 0;
                     result.pnwc = 0;
                 }
                 result.word = this.WordKey;
@@ -158,13 +132,6 @@ namespace AVSDK
         }
         public void Release()
         {
-#if AV_WRITABLE
-            if (AVMemMap.WRITABLE && dirty)
-            {
-                this.view.Flush();
-                this.dirty = false;
-            }
-#endif
             this.view.Dispose();
             this.view = null;
             this.map.Dispose();
@@ -174,7 +141,7 @@ namespace AVSDK
         {
             get
             {
-                if (size == 16)
+                if (size >= 16)
                 {
                     UInt64 result = (((UInt64)this.view.ReadUInt16(data+0)) << 48)
                                   + (((UInt64)this.view.ReadUInt16(data+2)) << 32)
@@ -182,191 +149,85 @@ namespace AVSDK
                                   +  ((UInt64)this.view.ReadUInt16(data+6));
                     return result;
                 }
-                this.underflow = true;
                 return UInt64.MaxValue;
             }
-#if AV_WRITABLE
-            set
-            {
-                if (size == 16)
-                {
-                    if (value.Length >= 4)
-                    {
-                        if (AVMemMap.WRITABLE)
-                        {
-                            this.view.Write(0, value[0]);
-                            this.view.Write(2, value[1]);
-                            this.view.Write(4, value[2]);
-                            this.view.Write(6, value[3]);
-                            this.dirty = true;
-                        }
-                        else
-                        {
-                            this.writeError = true;
-                        }
-                    }
-                    else
-                    {
-                        this.writeError = true;
-                    }
-                }
-                else
-                {
-                    this.overflow = true;
-                }
-            }
-#endif
         }
         public UInt16 Index
         {
             get
             {
-                if (size == 16)
+                if (size >= 16)
                 {
                     return this.view.ReadUInt16(data+8);
                 }
                 else
                 {
-                    this.underflow = true;
-                    return 0xFFFF;
+                    return 0;
                 }
             }
-#if AV_WRITABLE
-            set
-            {
-                if (size == 16)
-                {
-                    if (AVMemMap.WRITABLE)
-                    {
-                        this.view.Write(8, value);
-                        this.dirty = true;
-                    }
-                    else
-                    {
-                        this.writeError = true;
-                    }                
-                }
-                else
-                {
-                    this.overflow = true;
-                }
-            }
-#endif
         }
         public UInt16 WordKey
         {
             get
             {
-                return view.ReadUInt16(size == 16 ? data+10 : data+0);        
+                return view.ReadUInt16(size >= 16 ? data+10 : data+0);        
             }
-#if AV_WRITABLE
-            set
-            {
-                if (AVMemMap.WRITABLE)
-                {
-                    this.view.Write(size == 16 ? 10 : 0, value);
-                    this.dirty = true;
-                }
-                else
-                {
-                    this.overflow = true;
-                }
-            }
-#endif
         }
         public byte Punctuation
         {
             get
             {
-                return this.view.ReadByte(size == 16 ? data+12 : data+2);
+                return this.view.ReadByte(size >= 16 ? data+12 : data+2);
             }
-#if AV_WRITABLE
-            set
-            {
-                if (AVMemMap.WRITABLE)
-                {
-                    this.view.Write(size == 16 ? 12 : 2, value);
-                    this.dirty = true;
-                }
-                else
-                {
-                    this.overflow = true;
-                }
-            }
-#endif
         }
         public byte Transition
         {
             get
             {
-                return this.view.ReadByte(size == 16 ? data+13 : data+3);
+                return this.view.ReadByte(size >= 16 ? data+13 : data+3);
             }
-#if AV_WRITABLE
-            set
-            {
-                if (AVMemMap.WRITABLE)
-                {
-                    this.view.Write(size == 16 ? 13 : 3, value);
-                    this.dirty = true;
-                }
-                else
-                {
-                    this.overflow = true;
-                }
-            }
-#endif
         }
         public UInt16 WClass
         {
             get
             {
-                if (size == 16)
+                if (size >= 16)
                 {
                     return this.view.ReadUInt16(data+14);
                 }
-                if (size == 6)
-                {
-                    return this.view.ReadUInt16(data+4);
-                }
                 else
                 {
-                    this.underflow = true;
-                    return 0xFFFF;
+                    return 0;
                 }
             }
-#if AV_WRITABLE
-            set
+        }
+        public UInt32 POS
+        {
+            get
             {
-                if (size == 16)
+                if (size == 22)
                 {
-                    if (AVMemMap.WRITABLE)
-                    {
-                        this.view.Write(14, value);
-                        this.dirty = true;
-                    }
-                    else
-                    {
-                        this.writeError = true;
-                    }
-                }
-                else if (size == 6)
-                {
-                    if (AVMemMap.WRITABLE)
-                    {
-                        this.view.Write(4, value);
-                        this.dirty = true;
-                    }
-                    else
-                    {
-                        this.writeError = true;
-                    }
+                    return this.view.ReadUInt32(data + 16);
                 }
                 else
                 {
-                    this.overflow = true;
+                    return 0;
                 }
             }
-#endif
+        }
+        public UInt16 Lemma
+        {
+            get
+            {
+                if (size == 22)
+                {
+                    return this.view.ReadUInt16(data + 20);
+                }
+                else
+                {
+                    return 0;
+                }
+            }
         }
     }
     public class MMWritDX2 : AVMemMap
@@ -393,5 +254,4 @@ namespace AVSDK
             name = MMWritDX11.Name;
         }
     }
-
 }

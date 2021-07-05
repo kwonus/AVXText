@@ -46,12 +46,15 @@ namespace AVSDK
         EndOfChapter = 0x70, // (0b0111____)
         BookTransition = 0xF0, // (0b1110____)
         BeginingOfBook = 0xE0, // (0b1110____)
-        EndOfBook = 0xF0  // (0b1111____)
+        EndOfBook = 0xF0,  // (0b1111____)
+        BeginningOfBible = 0xE8,
+        EndOfBible = 0xF8
     }
     public enum PersonNumber
     {
         PersonBits = 0x3000,
         NumberBits = 0xC000,
+        Indefinite = 0x0000,
         Person1st = 0x1000,
         Person2nd = 0x2000,
         Person3rd = 0x3000,
@@ -74,6 +77,8 @@ namespace AVSDK
         Genitive = 0x0008,
         Unmarked = 0x0000    // new in July 2018
     }
+    // REVIEW:
+#if NEVER
     public enum PronounCase
     {
         Nominative = 0x0070,
@@ -86,6 +91,7 @@ namespace AVSDK
         Possessive = 0x0008,
         Adjective = 0x0A08
     }
+#endif
     public static class PunctuationMarking
     {
         public static string PrePunc(UInt16 previous, UInt16 current)

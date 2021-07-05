@@ -13,11 +13,11 @@ namespace AVSDK
  //   }
     public struct Book
     {
-        public string name;
-        public string[] alt;
-        public UInt16 num;
-        public UInt16 chapterIdx;
+        public byte num;
         public byte chapterCnt;
+        public UInt16 chapterIdx;
+        public string name;
+        public string[] abbreviations;
     }
 
     public class IXBook
@@ -25,6 +25,8 @@ namespace AVSDK
         public bool okay;
         public Dictionary<string, Book> bookByName;
         public Book[] books;
+
+        private char[] comma = new char[] { ',' };
 
         public IXBook(string sdk, ILittleEndianReader reader)
         {
@@ -35,57 +37,25 @@ namespace AVSDK
 
             var path = System.IO.Path.Combine(sdk, "AV-Book.ix");
             var input = new System.IO.StreamReader(path);
+            var binary = new System.IO.BinaryReader(input.BaseStream);
 
             byte[] obj = new byte[32];
             UInt16 b = 0;
             for (byte n = 1; n <= 66; n++, b++)
             {
                 books[b] = new AVSDK.Book();
+                var book = books[b];
+                book.num = binary.ReadByte();
+                book.chapterCnt = binary.ReadByte();
+                book.chapterIdx = binary.ReadUInt16();
+                var bytes = binary.ReadChars(16);
+                book.name = new string(bytes);
+                bytes = binary.ReadChars(12);
+                book.abbreviations = new string(bytes).Split(comma, StringSplitOptions.RemoveEmptyEntries);
 
-                var index = reader.ReadUInt16(obj, input.BaseStream);
-                okay = (index != null);
-                if (okay)
-                    books[b].chapterIdx = index.Value;
-                else break;
-
-                var bk = reader.ReadByte(obj, input.BaseStream);
-                okay = (bk != null) && (n == bk.Value);
-                if (okay)
-                    books[b].num = n;
-                else break;
-
-                var ch = reader.ReadByte(obj, input.BaseStream);
-                okay = (ch != null) && (ch.Value >= 1);
-                if (okay)
-                    books[b].chapterCnt = ch.Value;
-                else break;
-
-                okay = (reader.Read(obj, input.BaseStream) == 32);
-                if (okay)
-                {
-                    int slash = 0;
-                    string str = "";
-                    var alt = new List<string>();
-                    for (int i = 0; i <= 32 && obj[i] != 0; i++)
-                    {
-                        if (obj[i] == '/')
-                        {
-                            if (++slash == 1)
-                                books[b].name = str;
-                            else
-                                alt.Add(str);
-                            str = "";
-                        }
-                        else
-                        {
-                            str += (char)obj[i];
-                        }
-                    }
-                    books[b].alt = alt.ToArray();
-                    bookByName.Add(books[b].name.ToLower(), books[b]);
-                }
-                else break;
+                bookByName.Add(book.name.ToLower(), book);
             }
+            binary.Close();
             input.Close();
         }
     }
