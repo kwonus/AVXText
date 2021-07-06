@@ -15,15 +15,44 @@ namespace AVSDK
         private UInt32 length;
         private UInt32 data;
 
-        protected AVMemMap(string path, byte size) // size will be 176/DX11/22-bytes, 128//DX8/16-bytes, 32/DX2/4-bytes
+        protected AVMemMap(string name, string folder, byte size) // size will be 176/DX11/22-bytes, 128//DX8/16-bytes, 32/DX2/4-bytes
         {
-            this.name = null;
+            this.name = name;
+            this.size = size;
+            var path = System.IO.Path.Combine(folder, name);
+            var info = new System.IO.FileInfo(path);
+            this.length = (UInt32)info.Length;
+
+            try
+            {
+                this.map = System.IO.MemoryMappedFiles.MemoryMappedFile.CreateFromFile(path, System.IO.FileMode.Open, name);
+            }
+            catch (Exception ex)
+            {
+                return;
+            }
+
+            cnt = length / (UInt32)size;
+            this.view = map.CreateViewAccessor(0, this.length);
+
+            this.SetCursor(0);
+            this.data = 0;
+        }
+
+        protected AVMemMap(string name, byte size) // size will be 176/DX11/22-bytes, 128//DX8/16-bytes, 32/DX2/4-bytes
+        {
+            this.name = name;
+            this.length = (UInt32) 1+0xC0393;
             this.size = size;
 
-            var info = new System.IO.FileInfo(path);
-            this.length = (UInt32) info.Length;
-
-            this.map = System.IO.MemoryMappedFiles.MemoryMappedFile.CreateFromFile(path);
+            try
+            {
+                this.map = System.IO.MemoryMappedFiles.MemoryMappedFile.OpenExisting(name, System.IO.MemoryMappedFiles.MemoryMappedFileRights.ReadPermissions);
+            }
+            catch (Exception ex)
+            {
+                return;
+            }
 
             cnt = length / (UInt32) size;
             this.view = map.CreateViewAccessor(0, this.length); 
@@ -233,7 +262,7 @@ namespace AVSDK
     public class MMWritDX2 : AVMemMap
     {
         public static string Name = "AV-Writ32.dx";
-        public MMWritDX2(string sdk): base(System.IO.Path.Combine(sdk, MMWritDX2.Name), 2 * 2)    // 32 bits (4 bytes)
+        public MMWritDX2(string sdk): base(MMWritDX2.Name, sdk, 2 * 2)    // 32 bits (4 bytes)
         {
             this.name = MMWritDX2.Name;
         }
@@ -241,7 +270,7 @@ namespace AVSDK
     public class MMWritDX8 : AVMemMap
     {
         public static string Name = "AV-Writ-128.dx";
-        public MMWritDX8(string sdk): base(System.IO.Path.Combine(sdk, MMWritDX8.Name), 8 * 2) // 128 bits (16 bytes)
+        public MMWritDX8(string sdk): base(MMWritDX8.Name, sdk, 8 * 2) // 128 bits (16 bytes)
         {
             name = MMWritDX8.Name;
         }
@@ -249,7 +278,11 @@ namespace AVSDK
     public class MMWritDX11 : AVMemMap
     {
         public static string Name = "AV-Writ.dx";
-        public MMWritDX11(string sdk) : base(System.IO.Path.Combine(sdk, MMWritDX11.Name), 11 * 2)    // 176 bits (22 bytes)
+        public MMWritDX11(string sdk) : base(MMWritDX11.Name, sdk, 11 * 2)    // 176 bits (22 bytes)
+        {
+            name = MMWritDX11.Name;
+        }
+        public MMWritDX11() : base(MMWritDX11.Name, 11 * 2)    // 176 bits (22 bytes)
         {
             name = MMWritDX11.Name;
         }

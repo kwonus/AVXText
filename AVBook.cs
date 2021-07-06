@@ -28,7 +28,7 @@ namespace AVSDK
 
         private char[] comma = new char[] { ',' };
 
-        public IXBook(string sdk, ILittleEndianReader reader)
+        public IXBook(string sdk)
         {
             books = new Book[66];
             okay = false;
@@ -44,16 +44,22 @@ namespace AVSDK
             for (byte n = 1; n <= 66; n++, b++)
             {
                 books[b] = new AVSDK.Book();
-                var book = books[b];
-                book.num = binary.ReadByte();
-                book.chapterCnt = binary.ReadByte();
-                book.chapterIdx = binary.ReadUInt16();
+                books[b].num = binary.ReadByte();
+                books[b].chapterCnt = binary.ReadByte();
+                books[b].chapterIdx = binary.ReadUInt16();
                 var bytes = binary.ReadChars(16);
-                book.name = new string(bytes);
+                books[b].name = new string(bytes);
+                var len = books[b].name.IndexOf('\0');
+                if (len > 0)
+                    books[b].name = books[b].name.Substring(0, len);
                 bytes = binary.ReadChars(12);
-                book.abbreviations = new string(bytes).Split(comma, StringSplitOptions.RemoveEmptyEntries);
+                var abbreviation = new string(bytes);
+                len = abbreviation.IndexOf('\0');
+                if (len > 0)
+                    abbreviation = abbreviation.Substring(0, len);
+                books[b].abbreviations = abbreviation.Split(comma, StringSplitOptions.RemoveEmptyEntries);
 
-                bookByName.Add(book.name.ToLower(), book);
+                bookByName.Add(books[b].name.ToLower(), books[b]);
             }
             binary.Close();
             input.Close();

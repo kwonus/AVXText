@@ -48,7 +48,6 @@
     <Compile Include="AVMemMap.cs" />
     <Compile Include="AVWrit.cs" />
     <Compile Include="AVVerse.cs" />
-    <Compile Include="AVBible.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

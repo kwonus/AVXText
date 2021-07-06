@@ -9,24 +9,24 @@ namespace AVSDK
     public class IXVerse
     {
         public bool okay;
-        protected UInt32[] verses; // Book|Chapter|Verse|WordCnt
+        public UInt32[] verses; // Book|Chapter|Verse|WordCnt
 
-        public IXVerse(string sdk, ILittleEndianReader reader)
+        public IXVerse(string sdk)
         {
-            var list = new List<UInt32>();
+            var list = new UInt32[0x797D+1];
+
             var path = System.IO.Path.Combine(sdk, "AV-Verse.ix"); // TODO: AV-Verse.IX2 does not contain valid word counts;
             var input = new System.IO.StreamReader(path);
+            var binary = new System.IO.BinaryReader(input.BaseStream);
 
-            byte[] quad = new byte[4];
-            int cnt;
-            for (cnt = reader.Read(quad, input.BaseStream); cnt == 4; cnt = reader.Read(quad, input.BaseStream))
+            for (int i = 0; i < list.Length; i++)
             {
-                UInt32 index = (UInt32)((quad[0] * 0x1000000) + (quad[1] * 0x10000) + (quad[2] * 0x100) + quad[3]);
-                list.Add(index);
+                byte[] quad = binary.ReadBytes(4);
+                list[i] = (UInt32)((quad[0] * 0x1000000) + (quad[1] * 0x10000) + (quad[2] * 0x100) + quad[3]);
             }
-            this.okay = (cnt == 0) && (list.Count == 31102);
-            this.verses = list.ToArray();
+            this.verses = list;
 
+            binary.Close();
             input.Close();
         }
 
