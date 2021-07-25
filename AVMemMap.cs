@@ -120,6 +120,15 @@ namespace AVSDK
                 result.punc = this.Punctuation;
                 result.trans = this.Transition;
             }
+            else
+            {
+                result.word = 0xFFFF;
+                result.punc = 0;
+                result.trans = 0;
+                result.strongs = 0;
+                result.verseIdx = 0;
+                result.pnwc = 0;
+            }
             return ok;
         }
         public bool GetRecord(UInt32 director, ref Writ128 result)
