@@ -84,13 +84,19 @@ namespace AVSDK
             return result;
         }
 
-        public const UInt32 FIRST = 0x00000000;
-        public const UInt32 NEXT  = 0xFFFFFFFF;
+        public const UInt32 FIRST   = 0x00000000;
+        public const UInt32 NEXT    = 0xFFFFFFFF;
+        public const UInt32 CURRENT = 0xFFFFFFFE;
 
         public bool GetRecord(UInt32 director, ref Writ176 result)
         {
-            bool ok = (director == NEXT) ? ((++this.cursor) < this.cnt) : this.SetCursor(director);
-
+            bool ok;
+            switch (director)
+            {
+                case NEXT:      ok = (++this.cursor) < this.cnt;    break;
+                case CURRENT:   ok = this.cursor < this.cnt;        break;
+                default:        ok = this.SetCursor(director);      break;
+            }
             if (ok)
             {
                 data = (this.cursor * size);
