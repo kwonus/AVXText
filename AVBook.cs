@@ -64,5 +64,23 @@ namespace AVSDK
             binary.Close();
             input.Close();
         }
+        public Book? GetBookByNum(byte num)
+        {
+            if (num < 1 || num > 66)
+                return null;
+            return this.books[num-1];
+        }
+        public Book? GetBookByIdx(byte idx)
+        {
+            if (idx < 0 || idx >= 66)
+                return null;
+            return this.books[idx];
+        }
+        public Book? GetBookByName(string name)
+        {
+            if (name == null)
+                return null;
+            return this.bookByName.ContainsKey(name) ? this.bookByName[name] : (Book?)null;
+        }
     }
 }

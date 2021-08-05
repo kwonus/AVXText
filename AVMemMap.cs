@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AVText;
+using System;
 
 namespace AVSDK
 {
@@ -37,6 +38,9 @@ namespace AVSDK
 
             this.SetCursor(0);
             this.data = 0;
+
+            AVLemma.Initialize(folder);
+            AVLexicon.Initialize(folder);
         }
 
         protected AVMemMap(string name, byte size) // size will be 176/DX11/22-bytes, 128//DX8/16-bytes, 32/DX2/4-bytes
@@ -76,6 +80,22 @@ namespace AVSDK
 
             return result;
         }
+        public bool ResetCursor()
+        {
+            bool result = (this.cursor < this.cnt);
+
+            if (!result)
+            {
+                this.cursor = 0;
+            }
+            data = (this.cursor * size);
+
+            return result;
+        }
+        public bool CheckCursor(UInt32 csr)
+        {
+            return (csr < this.cnt);
+        }
         public bool Next()
         {
             bool result = (++this.cursor < this.cnt);
@@ -100,6 +120,56 @@ namespace AVSDK
             if (ok)
             {
                 data = (this.cursor * size);
+                if (this.size == 22)
+                {
+                    result.pos = this.POS;
+                    result.lemma = this.Lemma;
+                }
+                else
+                {
+                    result.pos = 0;
+                    result.lemma = 0;
+                }
+                if (this.size >= 16)
+                {
+                    result.strongs = this.Strongs;
+                    result.verseIdx = this.Index;
+                    result.pnwc = this.WClass;
+                }
+                else
+                {
+                    result.strongs = 0;
+                    result.verseIdx = 0;
+                    result.pnwc = 0;
+                }
+                result.word = this.WordKey;
+                result.punc = this.Punctuation;
+                result.trans = this.Transition;
+            }
+            else
+            {
+                result.word = 0xFFFF;
+                result.punc = 0;
+                result.trans = 0;
+                result.strongs = 0;
+                result.verseIdx = 0;
+                result.pnwc = 0;
+            }
+            this.ResetCursor();
+            return ok;
+        }
+        public bool GetRecordWithoutMovingCursor(UInt32 csr, ref Writ176 result)
+        {
+            bool ok = false;
+            switch (csr)
+            {
+                case NEXT: return false;
+                case CURRENT: break;
+                default: ok = this.CheckCursor(csr); break;
+            }
+            if (ok)
+            {
+                data = (csr * size);
                 if (this.size == 22)
                 {
                     result.pos = this.POS;

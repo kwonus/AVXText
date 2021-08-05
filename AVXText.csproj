@@ -21,6 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -29,6 +30,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -45,12 +47,27 @@
     <Compile Include="AVBook.cs" />
     <Compile Include="AVChapter.cs" />
     <Compile Include="AVIdxMap.cs" />
+    <Compile Include="AVLemma.cs" />
+    <Compile Include="AVLexicon.cs" />
     <Compile Include="AVMemMap.cs" />
+    <Compile Include="AVName.cs" />
+    <Compile Include="AVWordClass.cs" />
     <Compile Include="AVWrit.cs" />
     <Compile Include="AVVerse.cs" />
+    <Compile Include="AVXAPI.cs" />
+    <Compile Include="AVXSearchResult.cs" />
+    <Compile Include="BookChapterVerse.cs" />
+    <Compile Include="Bucket.cs" />
+    <Compile Include="FiveBitEncoding.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HMI\HMI-dotnet-4.8.csproj">
+      <Project>{96608884-584e-4298-b7e1-b6e85c5b3c4a}</Project>
+      <Name>HMI-dotnet-4.8</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
