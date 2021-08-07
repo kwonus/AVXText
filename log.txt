@@ -1,0 +1,33 @@
+2021-08-06 22:31:42.757 -04:00 [INF] Loaded 5 extensions
+2021-08-06 22:31:43.437 -04:00 [INF] MSBuild registered from C:\Program Files\dotnet\sdk\5.0.301\
+2021-08-06 22:31:43.982 -04:00 [INF] Found Visual Studio v16.10.31410.357 [C:\Program Files (x86)\Microsoft Visual Studio\2019\Community]
+2021-08-06 22:31:45.273 -04:00 [INF] Initializing upgrade step Select an entrypoint
+2021-08-06 22:31:45.277 -04:00 [INF] Setting entrypoint to user selected project: C:\Users\kevin\source\repos\AVXText\AVXText.csproj
+2021-08-06 22:31:45.280 -04:00 [INF] Initializing upgrade step Select project to upgrade
+2021-08-06 22:31:45.299 -04:00 [INF] Initializing upgrade step Back up project
+2021-08-06 22:32:43.942 -04:00 [INF] Skipping upgrade step Back up project
+2021-08-06 22:32:43.946 -04:00 [INF] Upgrade step Back up project skipped
+2021-08-06 22:32:50.221 -04:00 [INF] Initializing upgrade step Convert project file to SDK style
+2021-08-06 22:33:09.918 -04:00 [INF] Applying upgrade step Convert project file to SDK style
+2021-08-06 22:33:09.921 -04:00 [INF] Converting project file format with try-convert, version 0.9.232202
+2021-08-06 22:33:11.522 -04:00 [INF] [dotnet] Conversion complete!
+2021-08-06 22:33:11.841 -04:00 [INF] Project file converted successfully! The project may require additional changes to build successfully against the new .NET target.
+2021-08-06 22:33:13.531 -04:00 [INF] Upgrade step Convert project file to SDK style applied successfully
+2021-08-06 22:33:16.105 -04:00 [INF] Initializing upgrade step Clean up NuGet package references
+2021-08-06 22:33:17.401 -04:00 [INF] Reference to .NET Upgrade Assistant analyzer package (Microsoft.DotNet.UpgradeAssistant.Extensions.Default.Analyzers, version 0.2.237901) needs added
+2021-08-06 22:33:17.408 -04:00 [INF] Packages to be added: Operation { Item = Microsoft.DotNet.UpgradeAssistant.Extensions.Default.Analyzers, Version=0.2.237901, OperationDetails = OperationDetails { Risk = None, Details = System.Linq.EmptyPartition`1[System.String] } }
+2021-08-06 22:33:29.158 -04:00 [INF] Applying upgrade step Clean up NuGet package references
+2021-08-06 22:33:29.165 -04:00 [INF] Adding package reference: Microsoft.DotNet.UpgradeAssistant.Extensions.Default.Analyzers, Version=0.2.237901
+2021-08-06 22:33:30.939 -04:00 [INF] Upgrade step Clean up NuGet package references applied successfully
+2021-08-06 22:33:35.200 -04:00 [INF] Initializing upgrade step Update TFM
+2021-08-06 22:33:35.239 -04:00 [INF] TFM needs updated to netstandard2.0
+2021-08-06 22:33:48.287 -04:00 [INF] Applying upgrade step Update TFM
+2021-08-06 22:33:51.509 -04:00 [INF] Updated TFM to netstandard2.0
+2021-08-06 22:33:51.511 -04:00 [INF] Upgrade step Update TFM applied successfully
+2021-08-06 22:33:54.178 -04:00 [INF] Initializing upgrade step Update NuGet Packages
+2021-08-06 22:33:55.210 -04:00 [INF] No package updates needed
+2021-08-06 22:33:55.212 -04:00 [INF] Initializing upgrade step Add template files
+2021-08-06 22:33:55.218 -04:00 [INF] 0 expected template items needed
+2021-08-06 22:33:55.224 -04:00 [INF] Initializing upgrade step Update source code
+2021-08-06 22:33:57.288 -04:00 [INF] Initializing upgrade step Move to next project
+2021-08-06 22:34:23.230 -04:00 [INF] Saving upgrade progress file at C:\Users\kevin\source\repos\AVXText\.upgrade-assistant
