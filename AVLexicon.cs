@@ -72,6 +72,8 @@ namespace AVText
         }
         public static string GetLex(UInt16 id)
         {
+            id &= 0x3FFF;
+
             if (id >= 1 && id <= 12567)
             {
                 return LexMap[id-1].Search;
@@ -80,6 +82,8 @@ namespace AVText
         }
         public static string GetLexDisplay(UInt16 id)
         {
+            id &= 0x3FFF;
+
             if (id >= 1 && id <= 12567)
             {
                 return LexMap[id-1].Display;
@@ -88,6 +92,8 @@ namespace AVText
         }
         public static string GetLexModern(UInt16 id)
         {
+            id &= 0x3FFF;
+
             if (id >= 1 && id <= 12567)
             {
                 return LexMap[id-1].Modern;
