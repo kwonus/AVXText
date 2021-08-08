@@ -72,31 +72,85 @@ namespace AVText
         }
         public static string GetLex(UInt16 id)
         {
+            UInt16 caps = (UInt16) (id & 0xC000);
             id &= 0x3FFF;
 
             if (id >= 1 && id <= 12567)
             {
-                return LexMap[id-1].Search;
+                var lex = LexMap[id-1].Search;
+                if (lex.Length > 1)
+                {
+                    switch (caps)
+                    {
+                        case 0x8000: return lex.Substring(0, 1).ToUpper() + lex.Substring(1);
+                        case 0x4000: return lex.ToUpper();
+                        default:     return lex;
+                    }
+                }
+                else if (caps == 0)
+                {
+                    return lex;
+                }
+                else
+                {
+                    return lex.ToUpper();
+                }
             }
             return null;
         }
         public static string GetLexDisplay(UInt16 id)
         {
+            UInt16 caps = (UInt16)(id & 0xC000);
             id &= 0x3FFF;
 
             if (id >= 1 && id <= 12567)
             {
-                return LexMap[id-1].Display;
+                var lex = LexMap[id-1].Display;
+                if (lex.Length > 1)
+                {
+                    switch (caps)
+                    {
+                        case 0x8000: return lex.Substring(0, 1).ToUpper() + lex.Substring(1);
+                        case 0x4000: return lex.ToUpper();
+                        default: return lex;
+                    }
+                }
+                else if (caps == 0)
+                {
+                    return lex;
+                }
+                else
+                {
+                    return lex.ToUpper();
+                }
             }
             return null;
         }
         public static string GetLexModern(UInt16 id)
         {
+            UInt16 caps = (UInt16)(id & 0xC000);
             id &= 0x3FFF;
 
             if (id >= 1 && id <= 12567)
             {
-                return LexMap[id-1].Modern;
+                var lex = LexMap[id-1].Modern;
+                if (lex.Length > 1)
+                {
+                    switch (caps)
+                    {
+                        case 0x8000: return lex.Substring(0, 1).ToUpper() + lex.Substring(1);
+                        case 0x4000: return lex.ToUpper();
+                        default: return lex;
+                    }
+                }
+                else if (caps == 0)
+                {
+                    return lex;
+                }
+                else
+                {
+                    return lex.ToUpper();
+                }
             }
             return null;
         }
