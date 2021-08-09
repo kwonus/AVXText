@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,19 +16,25 @@ namespace AVSDK
         {
             var list = new UInt32[0x797D+1];
 
-            var path = System.IO.Path.Combine(sdk, "AV-Verse.ix"); // TODO: AV-Verse.IX2 does not contain valid word counts;
-            var input = new System.IO.StreamReader(path);
-            var binary = new System.IO.BinaryReader(input.BaseStream);
+            var data = AVMemMap.Fetch("AV-Verse.ix", sdk);
 
-            for (int i = 0; i < list.Length; i++)
+            var ok = (data != null) && File.Exists(data);
+
+            if (ok)
             {
-                byte[] quad = binary.ReadBytes(4);
-                list[i] = (UInt32)((quad[0] * 0x1000000) + (quad[1] * 0x10000) + (quad[2] * 0x100) + quad[3]);
-            }
-            this.verses = list;
+                var input = new System.IO.StreamReader(data);
+                var binary = new System.IO.BinaryReader(input.BaseStream);
 
-            binary.Close();
-            input.Close();
+                for (int i = 0; i < list.Length; i++)
+                {
+                    byte[] quad = binary.ReadBytes(4);
+                    list[i] = (UInt32)((quad[0] * 0x1000000) + (quad[1] * 0x10000) + (quad[2] * 0x100) + quad[3]);
+                }
+                this.verses = list;
+
+                binary.Close();
+                input.Close();
+            }
         }
 
         public byte GetBook(UInt16 index)

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AVSDK;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -24,15 +25,15 @@ namespace AVText
             ok = (sdk != null);
             if (ok)
             {
-                var path = Path.Combine(sdk, "AV-Lemma-OOV.dxi");
-                ok = File.Exists(path);
+                var data = AVMemMap.Fetch("AV-Lemma-OOV.dxi", sdk);
+                ok = (data != null) && File.Exists(data);
 
                 if (ok)
                 {
                     OOVLemmaMap = new Dictionary<UInt16, string>();
                     OOVLemmaReverseMap = new Dictionary<string, UInt16>();
 
-                    using (BinaryReader reader = new BinaryReader(File.Open(path, FileMode.Open)))
+                    using (BinaryReader reader = new BinaryReader(File.Open(data, FileMode.Open)))
                     {
                         try
                         {

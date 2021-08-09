@@ -1,10 +1,35 @@
 ﻿using AVText;
 using System;
+using System.IO;
+using System.Net.Http;
 
 namespace AVSDK
 {
     public class AVMemMap // : IAVMemMap
     {
+        public static HttpClient client { get; private set; } = new HttpClient();
+        public static string Fetch(string name, string folder)
+        {
+            var data = System.IO.Path.Combine(folder, name);
+            if (!File.Exists(data))
+            {
+                string url = repo;
+                if (!repo.EndsWith('/'))
+                    repo += '/';
+                url += name;
+                var task = client.GetByteArrayAsync(url);
+                task.Wait();
+                if (task.Status == System.Threading.Tasks.TaskStatus.RanToCompletion)
+                {
+                    var output = new FileStream(data, FileMode.Create, FileAccess.Write);
+                    output.Write(task.Result);
+                    output.Close();
+                }
+                else return null;
+            }
+            return data;
+        }
+        public static string repo { get; private set; } = "http://digital-av.org/Z14/";
         protected System.IO.MemoryMappedFiles.MemoryMappedFile map;
         protected System.IO.MemoryMappedFiles.MemoryMappedViewAccessor view;
 
@@ -20,27 +45,33 @@ namespace AVSDK
         {
             this.name = name;
             this.size = size;
-            var path = System.IO.Path.Combine(folder, name);
-            var info = new System.IO.FileInfo(path);
-            this.length = (UInt32)info.Length;
+            var data = AVMemMap.Fetch(name, folder);
 
-            try
+            var ok = (data != null) && File.Exists(data);
+
+            if (ok)
             {
-                this.map = System.IO.MemoryMappedFiles.MemoryMappedFile.CreateFromFile(path, System.IO.FileMode.Open, name);
+                var info = new System.IO.FileInfo(data);
+                this.length = (UInt32)info.Length;
+
+                try
+                {
+                    this.map = System.IO.MemoryMappedFiles.MemoryMappedFile.CreateFromFile(data, System.IO.FileMode.Open, name);
+                }
+                catch (Exception ex)
+                {
+                    return;
+                }
+
+                cnt = length / (UInt32)size;
+                this.view = map.CreateViewAccessor(0, this.length);
+
+                this.SetCursor(0);
+                this.data = 0;
+
+                AVLemma.Initialize(folder);
+                AVLexicon.Initialize(folder);
             }
-            catch (Exception ex)
-            {
-                return;
-            }
-
-            cnt = length / (UInt32)size;
-            this.view = map.CreateViewAccessor(0, this.length);
-
-            this.SetCursor(0);
-            this.data = 0;
-
-            AVLemma.Initialize(folder);
-            AVLexicon.Initialize(folder);
         }
 
         protected AVMemMap(string name, byte size) // size will be 176/DX11/22-bytes, 128//DX8/16-bytes, 32/DX2/4-bytes

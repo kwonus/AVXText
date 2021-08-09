@@ -10,6 +10,7 @@ using AVText;
 using System.Text;
 using QuelleHMI.Definitions;
 using QuelleHMI.Actions;
+using System.IO;
 
 namespace AVSDK
 {
@@ -83,7 +84,10 @@ namespace AVSDK
 			//
 			//TODO: Add the constructor code here (and get rif of hard-coded path)
 			//
-			string path = @"C:\src\Digital-AV\z-series\";
+			string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Digital-AV");
+			if (!Directory.Exists(path))
+				Directory.CreateDirectory(path);
+
 			this.XWrit = new MMWritDX11(path);
 			this.XBook = new IXBook(path);
 			this.XVerse = new IXVerse(path);

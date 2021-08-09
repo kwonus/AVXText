@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AVSDK;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -196,90 +197,90 @@ namespace AVText
 
         public static bool Initialize(string sdk)
         {
-            ok = (sdk != null);
+            var ok = (sdk != null);
+            string data = null;
             if (ok)
             {
-                var path = Path.Combine(sdk, "AV-Lexicon.dxi");
-                ok = File.Exists(path);
+                data = AVMemMap.Fetch("AV-Lexicon.dxi", sdk);
+                ok = (data != null) && File.Exists(data);
+            }
+            if (ok)
+            {
+                LexMap = new AVLexicon[12567];
+                ReverseMap = new Dictionary<string, UInt16>();
+                ReverseModernMap = new Dictionary<string, UInt16[]>();
 
-                if (ok)
+                using (BinaryReader reader = new BinaryReader(File.Open(data, FileMode.Open)))
                 {
-                    LexMap = new AVLexicon[12567];
-                    ReverseMap = new Dictionary<string, UInt16>();
-                    ReverseModernMap = new Dictionary<string, UInt16[]>();
-
-                    using (BinaryReader reader = new BinaryReader(File.Open(path, FileMode.Open)))
+                    try
                     {
-                        try
+                        UInt16 entity;
+                        UInt16 size;
+                        UInt32[] pos;
+                        string[] orthos = new string[3];
+                        UInt16 idx = 0;
+                        for (UInt16 num = 1; num <= LexMap.Length; num++, idx++)
                         {
-                            UInt16 entity;
-                            UInt16 size;
-                            UInt32[] pos;
-                            string[] orthos = new string[3];
-                            UInt16 idx = 0;
-                            for (UInt16 num = 1; num <= LexMap.Length; num++, idx++)
+                            entity = reader.ReadUInt16();
+                            size = reader.ReadUInt16();
+                            pos = new UInt32[size];
+                            if (size > 0)
                             {
-                                entity = reader.ReadUInt16();
-                                size = reader.ReadUInt16();
-                                pos = new UInt32[size];
-                                if (size > 0)
+                                for (var s = 0; s < size; s++)
+                                    pos[s] = reader.ReadUInt32();
+                            }
+
+                            for (int t = 0; t < 3; t++)
+                            {
+                                var i = 0;
+                                var buffer = new StringBuilder();
+                                for (var b = reader.ReadByte(); b != 0; ++i, b = reader.ReadByte())
+                                    buffer.Append((char)b);
+                                if (i == 0)
+                                    orthos[t] = null;
+                                else
+                                    orthos[t] = buffer.ToString();
+                            }
+                            var record = new AVLexicon(orthos[0], orthos[1], orthos[2], pos, entity);
+
+                            LexMap[idx] = record;
+                            ReverseMap[orthos[0]] = num;
+
+                            if (orthos[2] != null)
+                            {
+                                var existing = ReverseModernMap.ContainsKey(orthos[2]) ? ReverseModernMap[orthos[2]] : null;
+                                var replacement = (existing == null) ? new UInt16[] { num } : new UInt16[existing.Length + 1];
+                                if (existing != null)
+                                    replacement[existing.Length] = num;
+                                bool redundant = false;
+
+                                if (existing != null)
                                 {
-                                    for (var s = 0; s < size; s++)
-                                        pos[s] = reader.ReadUInt32();
-                                }
-
-                                for (int t = 0; t < 3; t++)
-                                {
-                                    var i = 0;
-                                    var buffer = new StringBuilder();
-                                    for (var b = reader.ReadByte(); b != 0; ++i, b = reader.ReadByte())
-                                        buffer.Append((char)b);
-                                    if (i == 0)
-                                        orthos[t] = null;
-                                    else
-                                        orthos[t] = buffer.ToString();
-                                }
-                                var record = new AVLexicon(orthos[0], orthos[1], orthos[2], pos, entity);
-
-                                LexMap[idx] = record;
-                                ReverseMap[orthos[0]] = num;
-
-                                if (orthos[2] != null)
-                                {
-                                    var existing = ReverseModernMap.ContainsKey(orthos[2]) ? ReverseModernMap[orthos[2]] : null;
-                                    var replacement = (existing == null) ? new UInt16[] { num } : new UInt16[existing.Length + 1];
-                                    if (existing != null)
-                                        replacement[existing.Length] = num;
-                                    bool redundant = false;
-
-                                    if (existing != null)
+                                    int i = 0;
+                                    foreach (var e in existing)
                                     {
-                                        int i = 0;
-                                        foreach (var e in existing)
-                                        {
-                                            redundant = (e == num);
-                                            if (redundant)
-                                                break;
-                                            replacement[i++] = e;
-                                        }
+                                        redundant = (e == num);
+                                        if (redundant)
+                                            break;
+                                        replacement[i++] = e;
                                     }
-                                    if (!redundant)
-                                    {
-                                        if (existing != null)
-                                            ReverseModernMap.Remove(orthos[2]);
-                                        ReverseModernMap[orthos[2]] = replacement;
-                                    }
+                                }
+                                if (!redundant)
+                                {
+                                    if (existing != null)
+                                        ReverseModernMap.Remove(orthos[2]);
+                                    ReverseModernMap[orthos[2]] = replacement;
                                 }
                             }
-                        } /*
-                        catch (EndOfStreamException eof)
-                        {
-                            ;
-                        } */
-                        catch (Exception ex)
-                        {
-                            ok = false;
                         }
+                    } /*
+                    catch (EndOfStreamException eof)
+                    {
+                        ;
+                    } */
+                    catch (Exception ex)
+                    {
+                        ok = false;
                     }
                 }
             }
