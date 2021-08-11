@@ -15,27 +15,51 @@ namespace AVText
 {
     class BookChapterVerse
     {
-		public HashSet<UInt64> Matches;
-		public Dictionary<UInt32, UInt64> Tokens;
+		public HashSet<UInt16> Verses { get; private set; }
+		public HashSet<UInt32> Tokens { get; private set; }
+		public Dictionary<UInt32, UInt64> TokensDeprecated { get; private set; }
+		public HashSet<UInt64> MatchesDeprecated { get; private set; }    // This might become deprecated; However it would be useful for where span!=0
 
-		public BookChapterVerse() {
-			this.Matches = new HashSet<UInt64>();	// this could be managed by Maganimity
-			this.Tokens = new Dictionary<UInt32, UInt64>();
+		public BookChapterVerse()
+		{
+			this.Verses = new HashSet<UInt16>();    // this could be managed by Maganimity
+			this.Tokens = new HashSet<UInt32>();    // this could be managed by Maganimity
+			this.MatchesDeprecated = new HashSet<UInt64>();
+			this.TokensDeprecated = new Dictionary<UInt32, UInt64>();
+		}
+
+		public bool AddVerse(UInt16 vidx)
+        {
+			if (!this.Verses.Contains(vidx))
+			{
+				this.Verses.Add(vidx);
+				return true;
+			}
+			return false;
+		}
+		public bool SubtractVerse(UInt16 vidx)
+		{
+			if (this.Verses.Contains(vidx))
+			{
+				this.Verses.Remove(vidx);
+				return true;
+			}
+			return false;
 		}
 
 		public bool AddMatch(UInt16 segmentIdx, UInt32 wstart, UInt32 wlast)
 		{
 			var encoded = SegmentElement.Create(wstart, wlast, segmentIdx);
-			if (!this.Matches.Contains(encoded))
-				this.Matches.Add(encoded);
+			if (!this.MatchesDeprecated.Contains(encoded))
+				this.MatchesDeprecated.Add(encoded);
 
 			return true;
 		}
 		bool AddMatch(UInt16 segmentIdx, UInt32 wstart, UInt16 wcnt)
 		{
 			var encoded = SegmentElement.Create(wstart, wcnt, segmentIdx);
-			if (!this.Matches.Contains(encoded))
-				this.Matches.Add(encoded);
+			if (!this.MatchesDeprecated.Contains(encoded))
+				this.MatchesDeprecated.Add(encoded);
 
 			return true;
 		}
@@ -43,7 +67,7 @@ namespace AVText
 		{
 			var list = new List<UInt64>();
 
-			foreach (var encoded in this.Matches)
+			foreach (var encoded in this.MatchesDeprecated)
 			{
 				var estart = SegmentElement.GetStart(encoded);
 				var elast = SegmentElement.GetStart(encoded);
@@ -53,7 +77,7 @@ namespace AVText
 			}
 			foreach (var encoded in list)
 			{
-				this.Matches.Remove(encoded);
+				this.MatchesDeprecated.Remove(encoded);
 			}
 			return true;
 		}
@@ -62,7 +86,7 @@ namespace AVText
 			var list = new List<UInt64>();
 			UInt32 wlast = wstart + wcnt - 1;
 
-			foreach (var encoded in this.Matches)
+			foreach (var encoded in this.MatchesDeprecated)
 			{
 				var estart = SegmentElement.GetStart(encoded);
 				var elast = SegmentElement.GetStart(encoded);
@@ -72,7 +96,7 @@ namespace AVText
 			}
 			foreach (var encoded in list)
 			{
-				this.Matches.Remove(encoded);
+				this.MatchesDeprecated.Remove(encoded);
 			}
 			return true;
 		}
@@ -207,7 +231,7 @@ namespace AVText
 			}
 			return false;
 		}
-		private bool IsMatch(AVSDK.Writ176 writ, QSearchFragment frag)
+		private bool IsMatch(UInt32 widx, AVSDK.Writ176 writ, QSearchFragment frag)
 		{
 			foreach (var spec in frag.specifications) {
 				bool matchedAny = false;
@@ -221,7 +245,10 @@ namespace AVText
 					matchedAny = matchedAll;
 				}
 				if (matchedAny)
+				{
+					this.Tokens.Add(widx);
 					return true;
+				}
 			}
 			return false;
 		}
@@ -270,6 +297,8 @@ namespace AVText
 									matched = (position != 0xFFFFFFFF);
 									end = start + position;
 
+									if (matched)
+										continue;
 									if (!matched)
 										break;
 								}
@@ -280,10 +309,19 @@ namespace AVText
 							}
 							if (matched) {
 								if (clause.polarity == '-')
+								{
 									this.SubtractMatch(start, end);
+									this.SubtractVerse(writ.verseIdx);
+									if ( (start != end) && AVXAPI.SELF.XWrit.GetRecord(start, ref prev) && (prev.verseIdx != writ.verseIdx))
+										this.SubtractVerse(prev.verseIdx);
+								}
 								else if (clause.polarity == '+')
+								{
 									this.AddMatch(clause.index, start, end);
-
+									this.AddVerse(writ.verseIdx);
+									if ((start != end) && AVXAPI.SELF.XWrit.GetRecord(start, ref prev) && (prev.verseIdx != writ.verseIdx))
+										this.AddVerse(prev.verseIdx);
+								}
 								matchCnt++;
 							}
 						}
@@ -303,13 +341,14 @@ namespace AVText
 
 			for (UInt32 i = 0; i < span; i++)
 			{
-				AVXAPI.SELF.XWrit.GetRecordWithoutMovingCursor(cursor++, ref writ);
-				if (this.IsMatch(writ, frag))
+				AVXAPI.SELF.XWrit.GetRecordWithoutMovingCursor(cursor, ref writ);
+				if (this.IsMatch(cursor, writ, frag))
 				{
-					var existing = this.Tokens.ContainsKey(cursor) ? this.Tokens[cursor] : (UInt64)(0);
-					this.Tokens[cursor] = existing | frag.bit;
-					return ++i;
+					var existing = this.TokensDeprecated.ContainsKey(cursor) ? this.TokensDeprecated[cursor] : (UInt64)(0);
+					this.TokensDeprecated[cursor] = existing | frag.bit;
+					return i+1;
 				}
+				cursor++;
 			}
 			return 0xFFFFFFFF;
 		}
@@ -356,10 +395,19 @@ namespace AVText
 					if (found == required)
 					{
 						if (clause.polarity == '-')
+						{
 							this.SubtractMatch(start, cursor);
+							this.SubtractVerse(writ.verseIdx);
+							if ((start != cursor) && AVXAPI.SELF.XWrit.GetRecord(start, ref prev) && (prev.verseIdx != writ.verseIdx))
+								this.SubtractVerse(prev.verseIdx);
+						}
 						else if (clause.polarity == '+')
+                        {
 							this.AddMatch(clause.index, start, cursor);
-
+							this.AddVerse(writ.verseIdx);
+							if ((start != cursor) && AVXAPI.SELF.XWrit.GetRecord(start, ref prev) && (prev.verseIdx != writ.verseIdx))
+								this.SubtractVerse(prev.verseIdx);
+						}
 						start = AVMemMap.CURRENT;
 						found = 0;
 						matchCnt++;
@@ -382,7 +430,7 @@ namespace AVText
 			UInt64 found = 0;
 			var verseIdx = 0;
 
-			Writ176 prev;
+			Writ176 prev = Writ176.InitializedWrit;
 			Writ176 writ;
 			UInt32 start = AVMemMap.CURRENT;
 			UInt32 cursor = AVMemMap.FIRST;
@@ -420,10 +468,19 @@ namespace AVText
 							if (found == required)
 							{
 								if (clause.polarity == '-')
+								{
 									this.SubtractMatch(start, cursor);
+									this.SubtractVerse(writ.verseIdx);
+									if ((start != cursor) && AVXAPI.SELF.XWrit.GetRecord(start, ref prev) && (prev.verseIdx != writ.verseIdx))
+										this.SubtractVerse(prev.verseIdx);
+								}
 								else if (clause.polarity == '+')
+								{
 									this.AddMatch(clause.index, start, cursor);
-
+									this.AddVerse(writ.verseIdx);
+									if ((start != cursor) && AVXAPI.SELF.XWrit.GetRecord(start, ref prev) && (prev.verseIdx != writ.verseIdx))
+										this.SubtractVerse(prev.verseIdx);
+								}
 								start = AVMemMap.CURRENT;
 								found = 0;
 								matchCnt++;
@@ -450,12 +507,12 @@ namespace AVText
 			for (UInt32 i = 0; cursor <= last; cursor++, i++)
 			{
 				AVXAPI.SELF.XWrit.GetRecordWithoutMovingCursor(cursor, ref writ);
-				if (this.IsMatch(writ, frag))
+				if (this.IsMatch(cursor, writ, frag))
 				{
-					if (this.Tokens.ContainsKey(cursor))
-						this.Tokens[cursor] |= frag.bit;
+					if (this.TokensDeprecated.ContainsKey(cursor))
+						this.TokensDeprecated[cursor] |= frag.bit;
 					else
-						this.Tokens[cursor] = frag.bit;
+						this.TokensDeprecated[cursor] = frag.bit;
 					return i;
 				}
 			}

@@ -125,13 +125,23 @@ namespace AVSDK
 						f = 0x1;
 				}
 
-			foreach(var clause in request.clauses)
+			var positives = new BookChapterVerse();
+			var negatives = new BookChapterVerse();
+
+			foreach (var clause in request.clauses)
 				if (clause.polarity == '+')
-					this.ExecuteSearchRequest(clause, request.controls, result);
+					positives.SearchClause(clause, request.controls);
 
 			foreach(var clause in request.clauses)
 				if (clause.polarity == '-')
-					this.ExecuteSearchRequest(clause, request.controls, result);
+					negatives.SearchClause(clause, request.controls);
+
+			foreach (var vidx in negatives.Verses)
+				if (positives.Verses.Contains(vidx))
+					positives.Verses.Remove(vidx);
+
+			result.verses = positives.Verses;
+			result.tokens = positives.Tokens;
 
 			return result;
         }
@@ -522,53 +532,10 @@ namespace AVSDK
 			}
 			return result;
 		}
-		void ExecuteSearchRequest(IQuelleSearchClause clause, IQuelleSearchControls controls, IQuelleSearchResult result)
-		{
-#if AVX_EXTRA_DEBUG_DIAGNOSTICS
-			Console::Out.WriteLine(clause.segment + ": (execution)");
-#endif
-			var bcv = new BookChapterVerse();
-			bcv.SearchClause(clause, controls);
-			result.segments = bcv.Matches;
-			result.tokens = bcv.Tokens;
-		}
 		// godhead + -- "eternal power"
 		IQuelleSearchResult  Search(QRequestSearch  request)
 		{
-			var result = this.CompileSearchRequest(request);
-			if (request.clauses.Length > UInt16.MaxValue)
-			{
-				result.AddError("A maximum of 14 search segments are supported by this library.");
-				return result;  // currently only supports a maximum of 14 search segments
-			}
-			UInt64 fcnt = 0; // count features
-			foreach(var clause in request.clauses)
-				fcnt += (UInt64) clause.fragments.Length;
-			if (fcnt > 64)
-			{
-				result.AddError("A maximum of 64 search fragments are supported by this library.");
-				return result; // currently only supports a maximum of 64 search fragments
-			}
-
-			UInt64 f = 0x1;
-			foreach (var clause in request.clauses)
-				foreach (var frag in clause.fragments)
-				{
-					((QSearchFragment)frag).bit = f;
-					f <<= 1;
-					if (f == 0) // not perfectly gracefully, handle overflow; UI will not be able to display correct token (or it will be ambiguous; we only support 64 tokens
-						f = 0x1;
-				}
-
-			foreach (var clause in request.clauses)
-					if (clause.polarity == '+')
-					this.ExecuteSearchRequest(clause, request.controls, result);
-
-			foreach (var clause in request.clauses)
-					if (clause.polarity == '-')
-					this.ExecuteSearchRequest(clause, request.controls, result);
-
-			return result;
+			return null;
 		}
 		IQuellePageResult  Page(QRequestPage  request)
 			{

@@ -49,5 +49,14 @@ namespace AVSDK
                 input.Close();
             }
         }
+        public byte GetVerseCount(UInt16 cidx)
+        {
+            if (cidx + 1 < chapters.Length)
+                return (byte)(chapters[cidx + 1].verseIdx - chapters[cidx].verseIdx);
+            else if (cidx + 1 == chapters.Length)
+                return (byte)21;
+
+            return 0;
+        }
     }
 }
