@@ -538,7 +538,7 @@ namespace AVSDK
 			return null;
 		}
 		IQuellePageResult  Page(QRequestPage  request)
-			{
+		{
 			return null;
 		}
 		String Test(String request)
