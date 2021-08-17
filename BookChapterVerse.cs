@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 using QuelleHMI;
 using QuelleHMI.Tokens;
-using QuelleHMI.Interop;
 using AVSDK;
 using QuelleHMI.Definitions;
 using QuelleHMI.Actions;
@@ -259,8 +256,6 @@ namespace AVText
 		private UInt32 SearchClauseQuoted_ScopedUsingVerse(IQuelleSearchClause clause, IQuelleSearchControls controls)
 		{
 			UInt32 matchCnt = 0;
-			UInt64 found = 0;
-			var verseIdx = 0;
 
 			var prev = Writ176.InitializedWrit;
 			var writ = Writ176.InitializedWrit;
@@ -275,7 +270,7 @@ namespace AVText
 				var book = AVXAPI.SELF.Books[b - 1];
 				var cidx = book.chapterIdx;
 				var ccnt = book.chapterCnt;
-
+		
 				for (var c = cidx; c < (UInt32)(cidx + ccnt); c++)
 				{
 					var chapter = AVXAPI.SELF.Chapters[c];
@@ -287,18 +282,42 @@ namespace AVText
 						if (AVXAPI.SELF.XWrit.GetRecord(cursor, ref writ))
 						{
 							span = AVXAPI.SELF.XVerse.GetWordCnt(writ.verseIdx);
-							UInt64 required = 0;
+							UInt16 reducableSpan = span;
 							var matched = false;
+							var first = true;
 
-							foreach (QSearchFragment fragment in clause.fragments) {
+							foreach (QSearchFragment fragment in clause.fragments)
+							{
+								if (reducableSpan == 0)
+                                {
+									matched = false;
+									break;
+                                }
+								bool adjacency = (fragment.adjacency == 1);
 								try
 								{
-									var position = this.SearchSequentiallyInSpan(span, fragment);
-									matched = (position != 0xFFFFFFFF);
+									UInt32 position;
+									if (first)
+									{
+										position = this.SearchSequentiallyInSpan(span, fragment);
+										matched = (position != 0xFFFFFFFF);
+										first = false;
+									}
+									else
+									{
+										UInt16 localSpan = adjacency ? (UInt16)1 : reducableSpan;
+										position = this.SearchSequentiallyInSpan(localSpan, fragment);
+										matched = (position != 0xFFFFFFFF);
+									}
 									end = start + position;
 
 									if (matched)
-										continue;
+                                    {
+										if (reducableSpan > position)
+											reducableSpan -= (UInt16)position;
+										else
+											reducableSpan = 0;
+									}
 									if (!matched)
 										break;
 								}
@@ -341,11 +360,12 @@ namespace AVText
 
 			for (UInt32 i = 0; i < span; i++)
 			{
-				AVXAPI.SELF.XWrit.GetRecordWithoutMovingCursor(cursor, ref writ);
+				AVXAPI.SELF.XWrit.GetRecord(cursor, ref writ);
 				if (this.IsMatch(cursor, writ, frag))
 				{
 					var existing = this.TokensDeprecated.ContainsKey(cursor) ? this.TokensDeprecated[cursor] : (UInt64)(0);
 					this.TokensDeprecated[cursor] = existing | frag.bit;
+					AVXAPI.SELF.XWrit.GetRecord(cursor+1, ref writ);
 					return i+1;
 				}
 				cursor++;
@@ -356,9 +376,7 @@ namespace AVText
 		{
 			UInt32 matchCnt = 0;
 			UInt64 found = 0;
-			var verseIdx = 0;
 
-			UInt32 localspan = 0;
 			var prev = Writ176.InitializedWrit;
 			var writ = Writ176.InitializedWrit;
 
