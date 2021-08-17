@@ -14,15 +14,10 @@ namespace AVText
     {
 		public HashSet<UInt16> Verses { get; private set; }
 		public HashSet<UInt32> Tokens { get; private set; }
-		public Dictionary<UInt32, UInt64> TokensDeprecated { get; private set; }
-		public HashSet<UInt64> MatchesDeprecated { get; private set; }    // This might become deprecated; However it would be useful for where span!=0
-
 		public BookChapterVerse()
 		{
 			this.Verses = new HashSet<UInt16>();    // this could be managed by Maganimity
 			this.Tokens = new HashSet<UInt32>();    // this could be managed by Maganimity
-			this.MatchesDeprecated = new HashSet<UInt64>();
-			this.TokensDeprecated = new Dictionary<UInt32, UInt64>();
 		}
 
 		public bool AddVerse(UInt16 vidx)
@@ -43,61 +38,6 @@ namespace AVText
 			}
 			return false;
 		}
-
-		public bool AddMatch(UInt16 segmentIdx, UInt32 wstart, UInt32 wlast)
-		{
-			var encoded = SegmentElement.Create(wstart, wlast, segmentIdx);
-			if (!this.MatchesDeprecated.Contains(encoded))
-				this.MatchesDeprecated.Add(encoded);
-
-			return true;
-		}
-		bool AddMatch(UInt16 segmentIdx, UInt32 wstart, UInt16 wcnt)
-		{
-			var encoded = SegmentElement.Create(wstart, wcnt, segmentIdx);
-			if (!this.MatchesDeprecated.Contains(encoded))
-				this.MatchesDeprecated.Add(encoded);
-
-			return true;
-		}
-		bool SubtractMatch(UInt32 wstart, UInt32 wlast)
-		{
-			var list = new List<UInt64>();
-
-			foreach (var encoded in this.MatchesDeprecated)
-			{
-				var estart = SegmentElement.GetStart(encoded);
-				var elast = SegmentElement.GetStart(encoded);
-
-				if (estart >= wstart && estart <= wlast && elast <= wlast && elast >= wstart)
-					list.Add(encoded);
-			}
-			foreach (var encoded in list)
-			{
-				this.MatchesDeprecated.Remove(encoded);
-			}
-			return true;
-		}
-		bool SubstractMatch(UInt32 wstart, UInt16 wcnt)
-		{
-			var list = new List<UInt64>();
-			UInt32 wlast = wstart + wcnt - 1;
-
-			foreach (var encoded in this.MatchesDeprecated)
-			{
-				var estart = SegmentElement.GetStart(encoded);
-				var elast = SegmentElement.GetStart(encoded);
-
-				if (estart >= wstart && estart <= wlast && elast <= wlast && elast >= wstart)
-					list.Add(encoded);
-			}
-			foreach (var encoded in list)
-			{
-				this.MatchesDeprecated.Remove(encoded);
-			}
-			return true;
-		}
-
 		public void SearchClause(IQuelleSearchClause clause, IQuelleSearchControls controls)
 		{
 			if (clause.quoted)
@@ -329,14 +269,12 @@ namespace AVText
 							if (matched) {
 								if (clause.polarity == '-')
 								{
-									this.SubtractMatch(start, end);
 									this.SubtractVerse(writ.verseIdx);
 									if ( (start != end) && AVXAPI.SELF.XWrit.GetRecord(start, ref prev) && (prev.verseIdx != writ.verseIdx))
 										this.SubtractVerse(prev.verseIdx);
 								}
 								else if (clause.polarity == '+')
 								{
-									this.AddMatch(clause.index, start, end);
 									this.AddVerse(writ.verseIdx);
 									if ((start != end) && AVXAPI.SELF.XWrit.GetRecord(start, ref prev) && (prev.verseIdx != writ.verseIdx))
 										this.AddVerse(prev.verseIdx);
@@ -363,8 +301,6 @@ namespace AVText
 				AVXAPI.SELF.XWrit.GetRecord(cursor, ref writ);
 				if (this.IsMatch(cursor, writ, frag))
 				{
-					var existing = this.TokensDeprecated.ContainsKey(cursor) ? this.TokensDeprecated[cursor] : (UInt64)(0);
-					this.TokensDeprecated[cursor] = existing | frag.bit;
 					AVXAPI.SELF.XWrit.GetRecord(cursor+1, ref writ);
 					return i+1;
 				}
@@ -375,7 +311,12 @@ namespace AVText
 		private UInt32 SearchClauseUnquoted_ScopedUsingSpan(IQuelleSearchClause clause, IQuelleSearchControls controls)
 		{
 			UInt32 matchCnt = 0;
-			UInt64 found = 0;
+			UInt64 required = 0;
+
+			foreach (QSearchFragment fragment in clause.fragments)
+			{
+				required |= fragment.bit;
+			}
 
 			var prev = Writ176.InitializedWrit;
 			var writ = Writ176.InitializedWrit;
@@ -397,46 +338,27 @@ namespace AVText
 
 				for (bool ok = AVXAPI.SELF.XWrit.GetRecord(cursor, ref writ); ok && (cursor <= until); cursor = AVXAPI.SELF.XWrit.cursor)
 				{
-					UInt64 required = 0;
-					Byte f = 0;
-					foreach (QSearchFragment fragment in clause.fragments) {
-						var bits = (UInt64) (0x1 << f++);
-						required |= bits;
-						bool matched = this.SearchUnorderedInSpan(span, fragment) != 0xFFFFFFFF;
-						if (matched)
-						{
-							found |= bits;
-							if (start == AVMemMap.CURRENT)
-								start = cursor;
-						}
-					}
-					if (found == required)
+					var found = this.SearchUnorderedInSpanCrossingVerseBoundaries(span, clause);
+
+					if ((found.bits & required) == required && found.indexes != null)
 					{
 						if (clause.polarity == '-')
 						{
-							this.SubtractMatch(start, cursor);
-							this.SubtractVerse(writ.verseIdx);
-							if ((start != cursor) && AVXAPI.SELF.XWrit.GetRecord(start, ref prev) && (prev.verseIdx != writ.verseIdx))
-								this.SubtractVerse(prev.verseIdx);
+							foreach (var vidx in found.indexes)
+							{
+								this.SubtractVerse(vidx);
+								matchCnt++;
+							}
 						}
 						else if (clause.polarity == '+')
-                        {
-							this.AddMatch(clause.index, start, cursor);
-							this.AddVerse(writ.verseIdx);
-							if ((start != cursor) && AVXAPI.SELF.XWrit.GetRecord(start, ref prev) && (prev.verseIdx != writ.verseIdx))
-								this.SubtractVerse(prev.verseIdx);
+						{
+							foreach (var vidx in found.indexes)
+							{
+								this.AddVerse(vidx);
+								matchCnt++;
+							}
 						}
 						start = AVMemMap.CURRENT;
-						found = 0;
-						matchCnt++;
-					}
-					else if (found != 0)
-					{
-						ok = AVXAPI.SELF.XWrit.GetRecord(cursor + span, ref writ);
-					}
-					else
-					{
-						ok = AVXAPI.SELF.XWrit.GetRecord(AVMemMap.NEXT, ref writ);
 					}
 				}
 			}
@@ -445,11 +367,14 @@ namespace AVText
 		private UInt32 SearchClauseUnquoted_ScopedUsingVerse(IQuelleSearchClause clause, IQuelleSearchControls controls)
 		{
 			UInt32 matchCnt = 0;
-			UInt64 found = 0;
+			UInt64 required = 0;
 			var verseIdx = 0;
 
-			Writ176 prev = Writ176.InitializedWrit;
-			Writ176 writ;
+			foreach (QSearchFragment fragment in clause.fragments)
+			{
+				required |= fragment.bit;
+			}
+			Writ176 writ = Writ176.InitializedWrit;
 			UInt32 start = AVMemMap.CURRENT;
 			UInt32 cursor = AVMemMap.FIRST;
 
@@ -466,58 +391,37 @@ namespace AVText
 					Byte span = 0;
 					for (cursor = chapter.writIdx; cursor <= until; cursor += span)
 					{
-						writ = Writ176.InitializedWrit;
 						if (AVXAPI.SELF.XWrit.GetRecord(cursor, ref writ))
 						{
 							span = AVXAPI.SELF.XVerse.GetWordCnt(writ.verseIdx);
-							UInt64 required = 0;
+							if (span == 0)
+								break;
 
-							foreach (QSearchFragment fragment in clause.fragments) {
-								var bit = (UInt64) (0x1 << (int)(fragment.bit - 1));
-								required |= bit;
-								bool matched = (this.SearchUnorderedInSpan(span, fragment) != 0xFFFFFFFF);
-								if (matched)
-								{
-									found |= bit;
-									if (start == AVMemMap.CURRENT)
-										start = cursor;
-								}
-							}
-							if (found == required)
+							var found = this.SearchUnorderedInSpan(span, clause);
+
+							if ((found.bits & required) == required)
 							{
 								if (clause.polarity == '-')
 								{
-									this.SubtractMatch(start, cursor);
-									this.SubtractVerse(writ.verseIdx);
-									if ((start != cursor) && AVXAPI.SELF.XWrit.GetRecord(start, ref prev) && (prev.verseIdx != writ.verseIdx))
-										this.SubtractVerse(prev.verseIdx);
+									this.SubtractVerse(found.vidx);
 								}
 								else if (clause.polarity == '+')
 								{
-									this.AddMatch(clause.index, start, cursor);
-									this.AddVerse(writ.verseIdx);
-									if ((start != cursor) && AVXAPI.SELF.XWrit.GetRecord(start, ref prev) && (prev.verseIdx != writ.verseIdx))
-										this.SubtractVerse(prev.verseIdx);
+									this.AddVerse(found.vidx);
 								}
 								start = AVMemMap.CURRENT;
-								found = 0;
 								matchCnt++;
 							}
 						}
-						else
-						{
-							break;
-						}
+						else break;
 					}
 				}
 			}
 			return matchCnt;
 		}
-		// These methods used to include book, and chapter
-		// There is a missing loop that creates the moving span window
-		//
-		private UInt32 SearchUnorderedInSpan(UInt16 span, QSearchFragment frag)
+		private (UInt64 bits, UInt16 vidx) SearchUnorderedInSpan(UInt16 span, IQuelleSearchClause clause)
 		{
+			UInt64 bits = 0;
 			UInt32 cursor = AVXAPI.SELF.XWrit.cursor;
 			UInt32 last = cursor + span - 1;
 			var writ = Writ176.InitializedWrit;
@@ -525,16 +429,40 @@ namespace AVText
 			for (UInt32 i = 0; cursor <= last; cursor++, i++)
 			{
 				AVXAPI.SELF.XWrit.GetRecordWithoutMovingCursor(cursor, ref writ);
-				if (this.IsMatch(cursor, writ, frag))
+				foreach (var frag in clause.fragments)
 				{
-					if (this.TokensDeprecated.ContainsKey(cursor))
-						this.TokensDeprecated[cursor] |= frag.bit;
-					else
-						this.TokensDeprecated[cursor] = frag.bit;
-					return i;
+					if (this.IsMatch(cursor, writ, (QSearchFragment)frag))
+					{
+						bits |= frag.bit;
+					}
 				}
 			}
-			return 0xFFFFFFFF;
+			return (bits, writ.verseIdx);
 		}
-    }
+		private (UInt64 bits, HashSet<UInt16> indexes) SearchUnorderedInSpanCrossingVerseBoundaries(UInt16 span, IQuelleSearchClause clause)
+		{
+			UInt64 bits = 0;
+			UInt32 cursor = AVXAPI.SELF.XWrit.cursor;
+			UInt32 last = cursor + span - 1;
+			var writ = Writ176.InitializedWrit;
+			HashSet<UInt16> indexes = null;
+
+			for (UInt32 i = 0; cursor <= last; cursor++, i++)
+			{
+				AVXAPI.SELF.XWrit.GetRecordWithoutMovingCursor(cursor, ref writ);
+				foreach (var frag in clause.fragments)
+				{
+					if (this.IsMatch(cursor, writ, (QSearchFragment)frag))
+					{
+						bits |= frag.bit;
+						if (indexes == null)
+							indexes = new HashSet<UInt16>();
+						if (!indexes.Contains(writ.verseIdx))
+							indexes.Add(writ.verseIdx);
+					}
+				}
+			}
+			return (bits, indexes);
+		}
+	}
 }
