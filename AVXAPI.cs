@@ -84,7 +84,7 @@ namespace AVSDK
 			//
 			//TODO: Add the constructor code here (and get rif of hard-coded path)
 			//
-			string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Digital-AV");
+			string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DigitalAV", "Z14");
 			if (!Directory.Exists(path))
 				Directory.CreateDirectory(path);
 

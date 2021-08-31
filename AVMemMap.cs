@@ -49,8 +49,8 @@ namespace AVSDK
 
             var ok = (data != null) && File.Exists(data);
 
-            if (ok)
-            {
+            if (ok && AVLemma.Initialize(folder) && AVLexicon.Initialize(folder))
+            { 
                 var info = new System.IO.FileInfo(data);
                 this.length = (UInt32)info.Length;
 
@@ -68,9 +68,6 @@ namespace AVSDK
 
                 this.SetCursor(0);
                 this.data = 0;
-
-                AVLemma.Initialize(folder);
-                AVLexicon.Initialize(folder);
             }
         }
 
