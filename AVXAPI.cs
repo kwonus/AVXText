@@ -1,15 +1,9 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 
-using System.Diagnostics;
 using QuelleHMI;
 using QuelleHMI.Tokens;
-using QuelleHMI.Interop;
 using AVText;
-using System.Text;
-using QuelleHMI.Definitions;
-using QuelleHMI.Actions;
 using System.IO;
 
 namespace AVSDK
@@ -84,7 +78,7 @@ namespace AVSDK
 			//
 			//TODO: Add the constructor code here (and get rif of hard-coded path)
 			//
-			string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DigitalAV", "Z14");
+			string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DigitalAV", "SDK", "Z14");
 			if (!Directory.Exists(path))
 				Directory.CreateDirectory(path);
 

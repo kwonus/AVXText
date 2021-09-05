@@ -8,14 +8,15 @@ namespace AVSDK
     public class AVMemMap // : IAVMemMap
     {
         public static HttpClient client { get; private set; } = new HttpClient();
-        public static string Fetch(string name, string folder)
+        public static string Fetch(string name, string folder, bool help = false)
         {
             var data = System.IO.Path.Combine(folder, name);
             if (!File.Exists(data))
             {
-                string url = repo;
-                if (!repo.EndsWith('/'))
-                    repo += '/';
+                string url = help ? RepoHELP : RepoSDK;
+                if (!url.EndsWith('/'))
+                    url += '/';
+
                 url += name;
                 var task = client.GetByteArrayAsync(url);
                 task.Wait();
@@ -29,7 +30,9 @@ namespace AVSDK
             }
             return data;
         }
-        public static string repo { get; private set; } = "http://digital-av.org/Z14/";
+        public static string RepoSDK { get; private set; } = "http://digital-av.org/Z14/";
+        public static string RepoHELP { get; private set; } = "http://digital-av.org/AV-Bible/Help/";
+
         protected System.IO.MemoryMappedFiles.MemoryMappedFile map;
         protected System.IO.MemoryMappedFiles.MemoryMappedViewAccessor view;
 

@@ -13,9 +13,6 @@
     <None Remove="Properties\**" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\HMI\HMI.csproj" />
   </ItemGroup>
 </Project>
