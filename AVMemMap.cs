@@ -14,6 +14,22 @@ namespace AVSDK
             if (!File.Exists(data))
             {
                 string url = help ? RepoHELP : RepoSDK;
+
+#if             LEGACY_DOTNET
+                if (!url.EndsWith("/"))
+                    url += '/';
+
+                url += name;
+                var task = client.GetByteArrayAsync(url);
+                task.Wait();
+                if (task.Status == System.Threading.Tasks.TaskStatus.RanToCompletion)
+                {
+                    var output = new FileStream(data, FileMode.Create, FileAccess.Write);
+                    output.Write(task.Result, 0, task.Result.Length);
+                    output.Close();
+                }
+                else return null;
+#else
                 if (!url.EndsWith('/'))
                     url += '/';
 
@@ -27,6 +43,7 @@ namespace AVSDK
                     output.Close();
                 }
                 else return null;
+#endif
             }
             return data;
         }
