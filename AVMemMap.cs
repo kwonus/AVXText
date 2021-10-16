@@ -91,6 +91,7 @@ namespace AVSDK
             }
         }
 
+#if WINDOWS_ONLY
         protected AVMemMap(string name, byte size) // size will be 176/DX11/22-bytes, 128//DX8/16-bytes, 32/DX2/4-bytes
         {
             this.name = name;
@@ -112,6 +113,7 @@ namespace AVSDK
             this.SetCursor(0);
             this.data = 0;
         }
+#endif
         public bool SetCursor(UInt32 csr)
         {
             bool result = (csr < this.cnt);
@@ -399,6 +401,12 @@ namespace AVSDK
         {
             this.name = MMWritDX2.Name;
         }
+#if WINDOWS_ONLY
+        public MMWritDX2() : base(MMWritDX11.Name, 2 * 2)    // 32 bits (4 bytes)
+        {
+            name = MMWritDX11.Name;
+        }
+#endif
     }
     public class MMWritDX8 : AVMemMap
     {
@@ -407,6 +415,12 @@ namespace AVSDK
         {
             name = MMWritDX8.Name;
         }
+#if WINDOWS_ONLY
+        public MMWritDX8() : base(MMWritDX11.Name, 8 * 2)    // 128 bits (16 bytes)
+        {
+            name = MMWritDX11.Name;
+        }
+#endif
     }
     public class MMWritDX11 : AVMemMap
     {
@@ -415,9 +429,11 @@ namespace AVSDK
         {
             name = MMWritDX11.Name;
         }
+#if WINDOWS_ONLY
         public MMWritDX11() : base(MMWritDX11.Name, 11 * 2)    // 176 bits (22 bytes)
         {
             name = MMWritDX11.Name;
         }
+#endif
     }
 }

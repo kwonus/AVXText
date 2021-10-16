@@ -75,9 +75,6 @@ namespace AVSDK
 
 		public AVXAPI()
 		{
-			//
-			//TODO: Add the constructor code here (and get rif of hard-coded path)
-			//
 			string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DigitalAV", "SDK", "Z14");
 			if (!Directory.Exists(path))
 				Directory.CreateDirectory(path);
