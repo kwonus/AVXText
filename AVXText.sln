@@ -1,9 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31410.357
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33205.214
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AVXText", "AVXText.csproj", "{D415C03F-25F9-41D2-B11B-D91A804CC4EA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AVXText", "AVXText.csproj", "{D415C03F-25F9-41D2-B11B-D91A804CC4EA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HMI", "..\Quelle-Obsolete\HMI.csproj", "{786E0A16-699F-452F-8434-345043B64F00}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SerializeFromSDK", "..\Digital-AV\z-series\FB\SerializeFromSDK.csproj", "{A01B4D8F-F94A-480E-AEA9-E8DBFA91B82C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +19,14 @@ Global
 		{D415C03F-25F9-41D2-B11B-D91A804CC4EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D415C03F-25F9-41D2-B11B-D91A804CC4EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D415C03F-25F9-41D2-B11B-D91A804CC4EA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{786E0A16-699F-452F-8434-345043B64F00}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{786E0A16-699F-452F-8434-345043B64F00}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{786E0A16-699F-452F-8434-345043B64F00}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{786E0A16-699F-452F-8434-345043B64F00}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A01B4D8F-F94A-480E-AEA9-E8DBFA91B82C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A01B4D8F-F94A-480E-AEA9-E8DBFA91B82C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A01B4D8F-F94A-480E-AEA9-E8DBFA91B82C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A01B4D8F-F94A-480E-AEA9-E8DBFA91B82C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

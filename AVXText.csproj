@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <OutputType>Library</OutputType>
     <RootNamespace>AVText</RootNamespace>
     <AssemblyName>AVText</AssemblyName>
@@ -13,6 +13,6 @@
     <None Remove="Properties\**" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\HMI\HMI.csproj" />
+    <ProjectReference Include="..\Quelle-Obsolete\HMI.csproj" />
   </ItemGroup>
 </Project>
